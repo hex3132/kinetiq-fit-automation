@@ -1,0 +1,66 @@
+channel:
+  name: "Home Fit Daily"
+  youtube_channel_id: ""   # optional — fill in to enable channel-history learning later
+
+character:
+  # even day-of-year -> female, odd -> male. Handled in src/main.py.
+  female:
+    display_name: "Coach Aria"
+    voice_id: "en-US-AriaNeural"          # edge-tts voice
+    visual_description: >
+      early 30s woman, athletic toned build, black hair in a high ponytail,
+      warm tan skin, matte black fitness mask/half-visor, coral-pink fitted
+      sports bra, black high-waist leggings, white training shoes
+  male:
+    display_name: "Coach Kai"
+    voice_id: "en-US-GuyNeural"           # edge-tts voice
+    visual_description: >
+      early-to-mid 30s man, lean-athletic build, short black fade haircut,
+      medium tan skin, matte black fitness mask/half-visor, charcoal-grey
+      fitted tank top, black joggers, white training shoes
+  shared_set_description: >
+    minimalist home living-room gym, yoga mat, soft daylight from a window,
+    plain light-grey wall
+
+topic_filter:
+  subreddits:
+    - "bodyweightfitness"
+    - "homegym"
+    - "xxfitness"
+    - "loseit"
+  keywords_boost:
+    - "no equipment"
+    - "home workout"
+    - "belly fat"
+    - "posture"
+    - "beginner"
+    - "5 minute"
+    - "15 minute"
+    - "form"
+    - "mistake"
+  fallback_topics:
+    - "Chair Squat for beginners"
+    - "Incline Push-up form fix"
+    - "Glute Bridge for lower back pain"
+    - "Standing Side Crunch for obliques"
+    - "Dead Bug for core stability"
+    - "Wall Push-up for beginners"
+    - "Plank Shoulder Tap"
+    - "Towel Row for back strength"
+
+script:
+  segments: 6
+  seconds_per_segment: 8
+  words_per_segment_min: 12
+  words_per_segment_max: 22
+  cta_line: >
+    If this helped, comment "PDF" and I'll send you the full guide for free —
+    follow for more daily home-workout guides.
+
+video:
+  frame_width: 1080
+  frame_height: 1920   # vertical, for Shorts/Reels/TikTok
+  zoom_amount: 0.12    # Ken Burns zoom over each segment
+
+drive:
+  folder_id: ""   # set via GDRIVE_FOLDER_ID env var instead if you prefer not to commit it
