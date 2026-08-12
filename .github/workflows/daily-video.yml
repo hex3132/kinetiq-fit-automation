@@ -35,7 +35,7 @@ jobs:
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
           GDRIVE_FOLDER_ID: ${{ vars.GDRIVE_FOLDER_ID }}
-          POLLINATIONS_API_KEY: ${{ secrets.POLLINATIONS_API_KEY }}
+          
         run: python src/main.py
 
       - name: Upload output as workflow artifact (backup)
