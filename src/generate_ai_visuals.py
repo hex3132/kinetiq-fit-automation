@@ -9,7 +9,7 @@ POLLINATIONS_BASE = "https://gen.pollinations.ai/image"
 
 def _build_url(prompt, width, height, seed=None):
     encoded_prompt = urllib.parse.quote(prompt)
-    url = f"{POLLINATIONS_BASE}/{encoded_prompt}?width={width}&height={height}"
+    url = f"{POLLINATIONS_BASE}/{encoded_prompt}?width={width}&height={height}&model=flux"
     if seed is not None:
         url += f"&seed={seed}"
     api_key = os.environ.get("POLLINATIONS_API_KEY")
