@@ -12,12 +12,12 @@ import urllib.parse
 
 import requests
 
-POLLINATIONS_BASE = "https://image.pollinations.ai/prompt"
+POLLINATIONS_BASE = "https://gen.pollinations.ai/image"
 
 
 def _build_url(prompt, width, height, seed=None):
     encoded_prompt = urllib.parse.quote(prompt)
-    url = f"{POLLINATIONS_BASE}/{encoded_prompt}?width={width}&height={height}&nologo=true"
+    url = f"{POLLINATIONS_BASE}/{encoded_prompt}?width={width}&height={height}"
     if seed is not None:
         url += f"&seed={seed}"
     return url
