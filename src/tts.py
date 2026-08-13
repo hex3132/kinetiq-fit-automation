@@ -1,45 +1,18 @@
 """
-tts.py — turns each script segment's "vo" text into an audio file, with
-rate/pitch/volume nudged per the segment's "emotion" tag. Uses edge-tts
-(free, no API key — uses Microsoft's public neural voices).
+tts.py — generates ONE continuous voice-over audio file for the whole
+video (not one clip per segment) so the narration flows as a single
+uninterrupted voice, in a deeper tone via a fixed pitch-down offset.
 """
 
 import asyncio
 import os
-import re
 
 import edge_tts
 
-EMOTION_ADJUSTMENTS = {
-    "energetic": {"rate_delta": 10, "pitch_delta": 4, "volume_delta": 8},
-    "instructional": {"rate_delta": 0, "pitch_delta": 0, "volume_delta": 0},
-    "warning": {"rate_delta": 5, "pitch_delta": -3, "volume_delta": 5},
-    "confident": {"rate_delta": 2, "pitch_delta": 2, "volume_delta": 3},
-    "warm": {"rate_delta": -8, "pitch_delta": -2, "volume_delta": -5},
-    "inviting": {"rate_delta": -5, "pitch_delta": 0, "volume_delta": 0},
-}
-
-BASE_RATE = "+0%"
-BASE_PITCH = "+0Hz"
-BASE_VOLUME = "+0%"
-
-
-def _parse_signed_unit(value: str, unit: str) -> int:
-    match = re.search(r"([+-]?\d+)", value)
-    return int(match.group(1)) if match else 0
-
-
-def _apply_emotion(base_rate, base_pitch, base_volume, emotion):
-    adj = EMOTION_ADJUSTMENTS.get(emotion, EMOTION_ADJUSTMENTS["instructional"])
-
-    rate_num = _parse_signed_unit(base_rate, "%") + adj["rate_delta"]
-    pitch_num = _parse_signed_unit(base_pitch, "Hz") + adj["pitch_delta"]
-    volume_num = _parse_signed_unit(base_volume, "%") + adj["volume_delta"]
-
-    rate_str = f"{'+' if rate_num >= 0 else ''}{rate_num}%"
-    pitch_str = f"{'+' if pitch_num >= 0 else ''}{pitch_num}Hz"
-    volume_str = f"{'+' if volume_num >= 0 else ''}{volume_num}%"
-    return rate_str, pitch_str, volume_str
+# Negative pitch = deeper voice. Applied on top of each character's base voice.
+DEEP_PITCH = "-15Hz"
+RATE = "-2%"   # very slightly slower reads as more authoritative/deep
+VOLUME = "+0%"
 
 
 async def _generate_one(text, out_path, voice_id, rate, pitch, volume):
@@ -47,20 +20,16 @@ async def _generate_one(text, out_path, voice_id, rate, pitch, volume):
     await communicate.save(out_path)
 
 
-def generate_voiceovers(script: dict, config: dict, character: dict, out_dir="output/audio") -> list:
-    """Generates one mp3 per segment, returns list of file paths in order."""
-    os.makedirs(out_dir, exist_ok=True)
+def generate_voiceover(script: dict, config: dict, character: dict, out_path="output/audio/full_narration.mp3") -> str:
+    """Joins every segment's vo into one continuous script and generates a single audio file."""
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+
+    full_text = " ".join(seg["vo"].strip() for seg in script["segments"])
     voice_id = character["voice_id"]
-    paths = []
 
-    for i, seg in enumerate(script["segments"]):
-        rate, pitch, volume = _apply_emotion(BASE_RATE, BASE_PITCH, BASE_VOLUME, seg["emotion"])
-        out_path = os.path.join(out_dir, f"segment_{i:02d}.mp3")
-        asyncio.run(_generate_one(seg["vo"], out_path, voice_id, rate, pitch, volume))
-        print(f"[tts] segment {i} ({seg['emotion']}) -> {out_path}")
-        paths.append(out_path)
-
-    return paths
+    asyncio.run(_generate_one(full_text, out_path, voice_id, RATE, DEEP_PITCH, VOLUME))
+    print(f"[tts] wrote continuous narration -> {out_path}")
+    return out_path
 
 
 if __name__ == "__main__":
@@ -69,7 +38,8 @@ if __name__ == "__main__":
         cfg = yaml.safe_load(f)
     demo_script = {
         "segments": [
-            {"visual": "coach greets camera", "vo": "Hey! Ready to feel the burn today? Let's go!", "emotion": "energetic"},
+            {"vo": "Today we're breaking down the chair squat."},
+            {"vo": "Sit back like there's a chair behind you, then stand tall."},
         ]
     }
-    generate_voiceovers(demo_script, cfg, cfg["character"]["female"])
+    generate_voiceover(demo_script, cfg, cfg["character"]["female"])
