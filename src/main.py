@@ -14,7 +14,7 @@ import yaml
 from fetch_topics import get_best_topic
 from research_topic import research_topic
 from generate_script import generate_script
-from tts import generate_voiceovers
+from tts import generate_voiceover
 from generate_ai_visuals import generate_ai_visuals
 from assemble_video import assemble_video
 from generate_platform_metadata import generate_platform_metadata, write_platform_metadata_file
@@ -38,9 +38,9 @@ def main():
     research_notes = research_topic(topic)
     script = generate_script(topic, config, research_notes, character)
     script["topic"] = topic
-    audio_paths = generate_voiceovers(script, config, character)
+    narration_path = generate_voiceover(script, config, character)
     image_paths = generate_ai_visuals(script, config, character)
-    video_path = assemble_video(script, audio_paths, image_paths, config)
+    video_path = assemble_video(script, narration_path, image_paths, config)
 
     date_str = date.today().isoformat()
     metadata_path = "output/platform_metadata.txt"
