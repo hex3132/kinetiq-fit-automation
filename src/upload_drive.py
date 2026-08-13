@@ -21,11 +21,6 @@ def _get_drive_service():
 
 
 def _resolve_folder_id(service, folder_name):
-    """
-    Looks the folder up by name and returns the ID exactly as the API
-    returns it — this avoids any risk of a hidden/mismatched character
-    from manually copy-pasting an ID through several apps.
-    """
     query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
     results = service.files().list(q=query, fields="files(id,name)").execute()
     folders = results.get("files", [])
@@ -44,11 +39,15 @@ def upload_file(service, local_path, filename, folder_id, mime_type="application
     return uploaded.get("id")
 
 
-def upload_daily_outputs(video_path: str, metadata_path: str, folder_id: str, date_str: str):
+def upload_daily_outputs(video_path: str, metadata_path: str, folder_id: str, date_str: str, flow_prompt_path: str = None):
     service = _get_drive_service()
     resolved_folder_id = _resolve_folder_id(service, FOLDER_NAME)
+
     upload_file(service, video_path, f"{date_str}-video.mp4", resolved_folder_id, "video/mp4")
     upload_file(service, metadata_path, f"{date_str}-metadata.txt", resolved_folder_id, "text/plain")
+
+    if flow_prompt_path and os.path.exists(flow_prompt_path):
+        upload_file(service, flow_prompt_path, f"{date_str}-flow-prompt.txt", resolved_folder_id, "text/plain")
 
 
 if __name__ == "__main__":
