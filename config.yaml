@@ -28,6 +28,12 @@ topic_filter:
     - "homegym"
     - "xxfitness"
     - "loseit"
+    - "Fitness"
+    - "fitness30plus"
+    - "flexibility"
+    - "yoga"
+    - "workout"
+    - "getmotivated"
   keywords_boost:
     - "no equipment"
     - "home workout"
