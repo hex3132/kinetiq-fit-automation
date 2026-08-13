@@ -1,66 +1,88 @@
 """
-generate_flow_prompts.py — builds a human-readable Google Flow prompt
-text file for today's character + exercise. Each segment becomes a
-natural-language prompt block you can paste directly into Google Flow,
-with the character description kept identical across every block so
-the same coach appears in every generated clip.
+generate_flow_prompts.py — builds a Google Flow prompt as structured
+JSON (matching a Flow-style scene-sequence schema), so the same coach
+character fully performs one complete exercise across the video, with
+the full continuous narration included as a single voice-over field.
 """
 
+import json
 
-def build_flow_prompt_text(script: dict, config: dict, character: dict) -> str:
+
+def build_flow_prompt_json(script: dict, config: dict, character: dict) -> dict:
     set_desc = config["character"]["shared_set_description"].strip()
     char_desc = character["visual_description"].strip()
     char_name = character["display_name"]
+    seconds_per_segment = config["script"]["seconds_per_segment"]
+    total_seconds = seconds_per_segment * len(script["segments"])
 
-    lines = []
-    lines.append(f"GOOGLE FLOW PROMPTS — {char_name}")
-    lines.append(f"Topic: {script.get('topic', 'Home workout')}")
-    lines.append("=" * 60)
-    lines.append("")
-    lines.append("Keep the CHARACTER line identical in every prompt below —")
-    lines.append("this is what keeps the same coach appearing across clips.")
-    lines.append("")
-    lines.append(f"CHARACTER: {char_desc}")
-    lines.append(f"SETTING: {set_desc}")
-    lines.append("")
-    lines.append("=" * 60)
+    full_narration = " ".join(seg["vo"].strip() for seg in script["segments"])
 
-    scene_labels = [
-        "SCENE 1 — Intro / Hook",
-        "SCENE 2 — Exercise Demo (step-by-step)",
-        "SCENE 3 — Common Mistake",
-        "SCENE 4 — Correct Form Fix",
-        "SCENE 5 — Benefit / Why It Works",
-        "SCENE 6 — Outro / Call to Action",
+    scene_titles = [
+        "Intro / Hook",
+        "Exercise Demo — Step by Step",
+        "Common Mistake",
+        "Correct Form Fix",
+        "Benefit / Why It Works",
+        "Outro / Call to Action",
     ]
 
+    scene_sequence = []
     for i, seg in enumerate(script["segments"]):
-        label = scene_labels[i] if i < len(scene_labels) else f"SCENE {i + 1}"
-        lines.append("")
-        lines.append(label)
-        lines.append("-" * len(label))
-        lines.append(
-            f"A cinematic vertical shot in {set_desc}. "
-            f"{char_name} — {char_desc} — {seg['visual']}. "
-            f"Mood: {seg['emotion']}. Smooth continuous motion, natural lighting, "
-            f"no on-screen text."
-        )
-        lines.append(f"[Spoken line for this scene: \"{seg['vo']}\"]")
+        title = scene_titles[i] if i < len(scene_titles) else f"Scene {i + 1}"
+        scene_sequence.append({
+            "scene": i + 1,
+            "title": title,
+            "duration": f"{seconds_per_segment} seconds",
+            "character": char_name,
+            "character_description": char_desc,
+            "action": f"{char_name} is fully visible, {seg['visual']}, completing full clean repetitions of the movement without being cut off mid-motion",
+            "setting": set_desc,
+            "camera": "steady vertical framing, smooth continuous motion, no jarring cuts",
+            "mood": seg["emotion"],
+        })
 
-    lines.append("")
-    lines.append("=" * 60)
-    lines.append("HOW TO USE: Copy each SCENE block into Google Flow one at a")
-    lines.append("time, generating one clip per scene. Keep the CHARACTER line")
-    lines.append("unchanged between scenes for visual consistency, then stitch")
-    lines.append("the resulting clips together in order.")
+    return {
+        "video_type": "cinematic home-fitness coaching demonstration",
+        "topic": script.get("topic", "Home workout"),
+        "exercise_name": script.get("exercise_name", ""),
+        "target_area": script.get("target_area", ""),
+        "duration": f"{total_seconds} seconds",
+        "aspect_ratio": "9:16",
+        "style": "photorealistic cinematic fitness content",
+        "quality": "ultra detailed 4K",
+        "camera_style": "smooth continuous tracking, steady vertical framing",
+        "character_consistency_note": "Use the exact same character_description string, unchanged, in every scene below — this keeps the same coach appearing throughout.",
+        "environment": {
+            "background": set_desc,
+            "lighting": "warm natural daylight",
+            "atmosphere": "clean, motivating, instructional home-fitness content",
+        },
+        "main_subject": {
+            "type": f"{char_name}, a fitness coach",
+            "description": char_desc,
+            "pose": "fully visible, full body in frame, performing the complete exercise",
+            "visibility": "fully visible throughout, never cropped mid-repetition",
+        },
+        "scene_sequence": scene_sequence,
+        "voice_over": {
+            "delivery": "one single continuous take, deep calm confident coaching tone, no repeated words or filler phrases, no pauses between scenes",
+            "full_script": full_narration,
+        },
+        "render_keywords": [
+            "photorealistic fitness coaching",
+            "cinematic home workout content",
+            "smooth continuous motion",
+            "one continuous exercise demonstration",
+            "consistent character across scenes",
+            "vertical short-form video",
+        ],
+    }
 
-    return "\n".join(lines)
 
-
-def write_flow_prompt_file(script: dict, config: dict, character: dict, out_path: str = "output/flow_prompt.txt") -> str:
-    text = build_flow_prompt_text(script, config, character)
+def write_flow_prompt_file(script: dict, config: dict, character: dict, out_path: str = "output/flow_prompt.json") -> str:
+    data = build_flow_prompt_json(script, config, character)
     with open(out_path, "w", encoding="utf-8") as f:
-        f.write(text)
+        json.dump(data, f, indent=2, ensure_ascii=False)
     print(f"[generate_flow_prompts] wrote {out_path}")
     return out_path
 
