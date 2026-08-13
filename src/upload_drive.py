@@ -28,10 +28,16 @@ def upload_file(service, local_path, filename, folder_id, mime_type="application
 
 
 def upload_daily_outputs(video_path: str, metadata_path: str, folder_id: str, date_str: str):
+    # Defensive cleanup: strip any accidental whitespace/newlines that can
+    # sneak in when an ID is copy-pasted into a web form.
+    raw_folder_id = folder_id
+    folder_id = folder_id.strip()
+
+    print(f"[upload_drive] DEBUG raw folder_id repr: {raw_folder_id!r} (len={len(raw_folder_id)})")
+    print(f"[upload_drive] DEBUG cleaned folder_id repr: {folder_id!r} (len={len(folder_id)})")
+
     service = _get_drive_service()
 
-    # Debug: check who this token belongs to, and whether the folder is
-    # actually visible to that account, before attempting the upload.
     try:
         about = service.about().get(fields="user").execute()
         print(f"[upload_drive] DEBUG authenticated as: {about.get('user', {}).get('emailAddress')}")
@@ -39,10 +45,14 @@ def upload_daily_outputs(video_path: str, metadata_path: str, folder_id: str, da
         print(f"[upload_drive] DEBUG could not fetch account info: {e}")
 
     try:
-        folder = service.files().get(fileId=folder_id, fields="id,name,trashed,owners", supportsAllDrives=True).execute()
-        print(f"[upload_drive] DEBUG folder found: {folder}")
+        results = service.files().list(
+            q="mimeType='application/vnd.google-apps.folder' and trashed=false",
+            fields="files(id,name)",
+            pageSize=20,
+        ).execute()
+        print(f"[upload_drive] DEBUG folders visible to this account: {results.get('files')}")
     except Exception as e:
-        print(f"[upload_drive] DEBUG folder lookup FAILED: {e}")
+        print(f"[upload_drive] DEBUG folder list FAILED: {e}")
 
     upload_file(service, video_path, f"{date_str}-video.mp4", folder_id, "video/mp4")
     upload_file(service, metadata_path, f"{date_str}-metadata.txt", folder_id, "text/plain")
