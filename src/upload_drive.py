@@ -47,7 +47,7 @@ def upload_daily_outputs(video_path: str, metadata_path: str, folder_id: str, da
     upload_file(service, metadata_path, f"{date_str}-metadata.txt", resolved_folder_id, "text/plain")
 
     if flow_prompt_path and os.path.exists(flow_prompt_path):
-        upload_file(service, flow_prompt_path, f"{date_str}-flow-prompt.txt", resolved_folder_id, "text/plain")
+        upload_file(service, flow_prompt_path, f"{date_str}-flow-prompt.json", resolved_folder_id, "application/json")
 
 
 if __name__ == "__main__":
