@@ -1,27 +1,4 @@
-"""
-upload_drive.py — uploads today's output files to a Google Drive folder
-using OAuth (refresh token), NOT a service account.
-
-Why OAuth and not a service account: a service account is its own
-"robot" identity with zero storage of its own. When it uploads a file to
-your folder, it's still the file's owner internally, and it needs its own
-quota to do that — which is 0 on a personal Gmail account (this only
-works differently inside a paid Google Workspace org with Shared Drives).
-OAuth instead acts AS your own account, using your real storage quota, so
-it works on a normal personal Google account.
-
-One-time setup (see README.md for the click-by-click version):
-  1. Create an OAuth Client ID (type: Desktop app) in Google Cloud Console.
-  2. Use it once, interactively, to get a refresh token (a short helper
-     script for this is in README.md — you only ever run it once, locally).
-  3. Store three values as GitHub Secrets:
-       GOOGLE_CLIENT_ID
-       GOOGLE_CLIENT_SECRET
-       GOOGLE_REFRESH_TOKEN
-"""
-
 import os
-
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
@@ -32,7 +9,7 @@ SCOPES = ["https://www.googleapis.com/auth/drive"]
 
 def _get_drive_service():
     credentials = Credentials(
-        token=None,  # no access token yet — the library fetches one automatically below
+        token=None,
         refresh_token=os.environ["GOOGLE_REFRESH_TOKEN"],
         token_uri=TOKEN_URI,
         client_id=os.environ["GOOGLE_CLIENT_ID"],
@@ -52,6 +29,21 @@ def upload_file(service, local_path, filename, folder_id, mime_type="application
 
 def upload_daily_outputs(video_path: str, metadata_path: str, folder_id: str, date_str: str):
     service = _get_drive_service()
+
+    # Debug: check who this token belongs to, and whether the folder is
+    # actually visible to that account, before attempting the upload.
+    try:
+        about = service.about().get(fields="user").execute()
+        print(f"[upload_drive] DEBUG authenticated as: {about.get('user', {}).get('emailAddress')}")
+    except Exception as e:
+        print(f"[upload_drive] DEBUG could not fetch account info: {e}")
+
+    try:
+        folder = service.files().get(fileId=folder_id, fields="id,name,trashed,owners", supportsAllDrives=True).execute()
+        print(f"[upload_drive] DEBUG folder found: {folder}")
+    except Exception as e:
+        print(f"[upload_drive] DEBUG folder lookup FAILED: {e}")
+
     upload_file(service, video_path, f"{date_str}-video.mp4", folder_id, "video/mp4")
     upload_file(service, metadata_path, f"{date_str}-metadata.txt", folder_id, "text/plain")
 
