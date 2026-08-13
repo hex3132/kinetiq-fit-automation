@@ -1,11 +1,14 @@
 """
 fetch_topics.py — topic research step.
 
-Pulls hot post titles from a few fitness-focused subreddits (no API key
-needed for read-only Reddit JSON endpoints), scores each title against
-config.yaml's keyword-boost list, and returns the best-scoring one. Falls
-back to a rotating static list if Reddit is unreachable (rate limits /
-blocks happen — this keeps the pipeline running instead of crashing).
+Pulls hot/rising post titles from a wide set of fitness-focused
+subreddits (no API key needed for read-only Reddit JSON endpoints) —
+including general fitness hubs where viral TikTok/Instagram/YouTube
+workout trends get discussed and reposted, since none of those
+platforms offer a free, ToS-safe way to pull trending data directly.
+Scores each title against config.yaml's keyword-boost list, returns the
+best-scoring one. Falls back to a rotating static list if Reddit is
+unreachable.
 """
 
 from datetime import date
@@ -24,15 +27,16 @@ def _load_config():
 def fetch_reddit_titles(subreddits):
     titles = []
     for sub in subreddits:
-        url = f"https://www.reddit.com/r/{sub}/hot.json?limit=15"
-        try:
-            resp = requests.get(url, headers=HEADERS, timeout=10)
-            resp.raise_for_status()
-            data = resp.json()
-            for post in data["data"]["children"]:
-                titles.append(post["data"]["title"])
-        except Exception as e:
-            print(f"[fetch_topics] Reddit fetch failed for r/{sub}: {e}")
+        for sort in ("hot", "rising"):
+            url = f"https://www.reddit.com/r/{sub}/{sort}.json?limit=15"
+            try:
+                resp = requests.get(url, headers=HEADERS, timeout=10)
+                resp.raise_for_status()
+                data = resp.json()
+                for post in data["data"]["children"]:
+                    titles.append(post["data"]["title"])
+            except Exception as e:
+                print(f"[fetch_topics] Reddit fetch failed for r/{sub}/{sort}: {e}")
     return titles
 
 
@@ -59,8 +63,6 @@ def get_best_topic():
             print(f"[fetch_topics] Picked from Reddit (score {best_score}): {best_title}")
             return best_title
 
-    # Fallback: rotate through the static list by day-of-year so it still
-    # cycles through variety even when Reddit gives nothing useful.
     fallback = filt["fallback_topics"]
     topic = fallback[date.today().timetuple().tm_yday % len(fallback)]
     print(f"[fetch_topics] Using fallback topic: {topic}")
