@@ -1,19 +1,14 @@
 """
-assemble_video.py — the final step: turns the per-segment images + audio
-into one finished vertical video. Each image is shown for exactly as long
-as its matching voiceover clip lasts (read from the audio file itself, so
-segments are never cut short or stretched to a guessed length), with a
-slow Ken Burns zoom for visual movement.
+assemble_video.py — builds the final video from per-segment images and
+ONE continuous narration audio track. Each image's on-screen duration
+is calculated proportionally from its segment's word count against the
+full narration's actual spoken length, so timing still lines up even
+though there's only one audio file for the whole video.
 """
 
 import os
 
-from moviepy.editor import (
-    AudioFileClip,
-    CompositeAudioClip,
-    ImageClip,
-    concatenate_videoclips,
-)
+from moviepy.editor import AudioFileClip, concatenate_videoclips, ImageClip
 
 
 def _ken_burns_clip(image_path, duration, frame_size, zoom_amount=0.12):
@@ -27,9 +22,15 @@ def _ken_burns_clip(image_path, duration, frame_size, zoom_amount=0.12):
     return zoomed.set_position("center")
 
 
+def _segment_durations(script, total_duration):
+    word_counts = [len(seg["vo"].split()) for seg in script["segments"]]
+    total_words = sum(word_counts) or 1
+    return [max(0.5, total_duration * (wc / total_words)) for wc in word_counts]
+
+
 def assemble_video(
     script: dict,
-    audio_paths: list,
+    narration_path: str,
     image_paths: list,
     config: dict,
     out_path: str = "output/final_video.mp4",
@@ -37,19 +38,22 @@ def assemble_video(
     v = config["video"]
     frame_size = (v["frame_width"], v["frame_height"])
 
-    clips = []
-    audio_clips = []
+    narration_audio = AudioFileClip(narration_path)
+    total_duration = narration_audio.duration
 
-    for img_path, audio_path in zip(image_paths, audio_paths):
-        audio_clip = AudioFileClip(audio_path)
-        duration = audio_clip.duration  # actual spoken length, not a guess
+    durations = _segment_durations(script, total_duration)
+
+    clips = []
+    for img_path, duration in zip(image_paths, durations):
         visual = _ken_burns_clip(img_path, duration, frame_size, v.get("zoom_amount", 0.12))
-        visual = visual.set_audio(audio_clip)
         clips.append(visual)
-        audio_clips.append(audio_clip)
 
     final = concatenate_videoclips(clips, method="compose")
     final = final.resize(frame_size)
+
+    # Trim/pad the single narration track to match the assembled video length exactly.
+    final = final.set_duration(total_duration)
+    final = final.set_audio(narration_audio)
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     final.write_videofile(
@@ -61,8 +65,7 @@ def assemble_video(
         preset="medium",
     )
 
-    for c in audio_clips:
-        c.close()
+    narration_audio.close()
     final.close()
 
     print(f"[assemble_video] wrote {out_path}")
@@ -70,4 +73,4 @@ def assemble_video(
 
 
 if __name__ == "__main__":
-    print("Run via main.py — this module needs script/audio/image outputs from earlier steps.")
+    print("Run via main.py — this module needs script/narration/image outputs from earlier steps.")
