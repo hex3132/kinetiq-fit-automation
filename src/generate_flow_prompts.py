@@ -1,40 +1,69 @@
 """
-generate_flow_prompts.py — OPTIONAL step. The pipeline already produces a
-finished video without Google Flow. This file exists only if you also
-want a Flow-ready prompt file for a specific segment — e.g. to
-re-generate one segment at higher visual quality by hand in Flow. Not
-called by main.py by default; call it manually if you want it.
+generate_flow_prompts.py — builds a human-readable Google Flow prompt
+text file for today's character + exercise. Each segment becomes a
+natural-language prompt block you can paste directly into Google Flow,
+with the character description kept identical across every block so
+the same coach appears in every generated clip.
 """
 
-import json
 
+def build_flow_prompt_text(script: dict, config: dict, character: dict) -> str:
+    set_desc = config["character"]["shared_set_description"].strip()
+    char_desc = character["visual_description"].strip()
+    char_name = character["display_name"]
 
-def build_flow_prompt_for_segment(segment: dict, character: dict, set_description: str, duration: int) -> dict:
-    return {
-        "character": character["display_name"],
-        "duration_seconds": duration,
-        "shot": "medium full-body shot, side angle",
-        "setting": set_description,
-        "character_description": character["visual_description"],
-        "action": segment["visual"],
-        "camera": "steady framing, no cuts, continuous motion",
-        "lighting": "bright clean daylight",
-        "mood": segment["emotion"],
-    }
+    lines = []
+    lines.append(f"GOOGLE FLOW PROMPTS — {char_name}")
+    lines.append(f"Topic: {script.get('topic', 'Home workout')}")
+    lines.append("=" * 60)
+    lines.append("")
+    lines.append("Keep the CHARACTER line identical in every prompt below —")
+    lines.append("this is what keeps the same coach appearing across clips.")
+    lines.append("")
+    lines.append(f"CHARACTER: {char_desc}")
+    lines.append(f"SETTING: {set_desc}")
+    lines.append("")
+    lines.append("=" * 60)
 
-
-def write_flow_prompts_file(script: dict, config: dict, character: dict, out_path: str = "output/flow_prompts.json"):
-    set_desc = config["character"]["shared_set_description"]
-    duration = config["script"]["seconds_per_segment"]
-    prompts = [
-        build_flow_prompt_for_segment(seg, character, set_desc, duration)
-        for seg in script["segments"]
+    scene_labels = [
+        "SCENE 1 — Intro / Hook",
+        "SCENE 2 — Exercise Demo (step-by-step)",
+        "SCENE 3 — Common Mistake",
+        "SCENE 4 — Correct Form Fix",
+        "SCENE 5 — Benefit / Why It Works",
+        "SCENE 6 — Outro / Call to Action",
     ]
-    with open(out_path, "w") as f:
-        json.dump(prompts, f, indent=2)
+
+    for i, seg in enumerate(script["segments"]):
+        label = scene_labels[i] if i < len(scene_labels) else f"SCENE {i + 1}"
+        lines.append("")
+        lines.append(label)
+        lines.append("-" * len(label))
+        lines.append(
+            f"A cinematic vertical shot in {set_desc}. "
+            f"{char_name} — {char_desc} — {seg['visual']}. "
+            f"Mood: {seg['emotion']}. Smooth continuous motion, natural lighting, "
+            f"no on-screen text."
+        )
+        lines.append(f"[Spoken line for this scene: \"{seg['vo']}\"]")
+
+    lines.append("")
+    lines.append("=" * 60)
+    lines.append("HOW TO USE: Copy each SCENE block into Google Flow one at a")
+    lines.append("time, generating one clip per scene. Keep the CHARACTER line")
+    lines.append("unchanged between scenes for visual consistency, then stitch")
+    lines.append("the resulting clips together in order.")
+
+    return "\n".join(lines)
+
+
+def write_flow_prompt_file(script: dict, config: dict, character: dict, out_path: str = "output/flow_prompt.txt") -> str:
+    text = build_flow_prompt_text(script, config, character)
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(text)
     print(f"[generate_flow_prompts] wrote {out_path}")
     return out_path
 
 
 if __name__ == "__main__":
-    print("Optional module — see docstring. Call write_flow_prompts_file() manually if needed.")
+    print("Import and call write_flow_prompt_file(...) from main.py.")
