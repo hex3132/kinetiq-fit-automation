@@ -1,19 +1,18 @@
 channel:
   name: "Home Fit Daily"
-  youtube_channel_id: ""   # optional — fill in to enable channel-history learning later
+  youtube_channel_id: ""
 
 character:
-  # even day-of-year -> female, odd -> male. Handled in src/main.py.
   female:
     display_name: "Coach Aria"
-    voice_id: "en-US-AriaNeural"          # edge-tts voice
+    voice_id: "en-US-AriaNeural"
     visual_description: >
       early 30s woman, athletic toned build, black hair in a high ponytail,
       warm tan skin, matte black fitness mask/half-visor, coral-pink fitted
       sports bra, black high-waist leggings, white training shoes
   male:
     display_name: "Coach Kai"
-    voice_id: "en-US-GuyNeural"           # edge-tts voice
+    voice_id: "en-US-GuyNeural"
     visual_description: >
       early-to-mid 30s man, lean-athletic build, short black fade haircut,
       medium tan skin, matte black fitness mask/half-visor, charcoal-grey
@@ -55,8 +54,8 @@ topic_filter:
     - "Towel Row for back strength"
 
 script:
-  segments: 6
-  seconds_per_segment: 8
+  segments: 10
+  seconds_per_segment: 6
   words_per_segment_min: 12
   words_per_segment_max: 22
   cta_line: >
@@ -65,8 +64,8 @@ script:
 
 video:
   frame_width: 1080
-  frame_height: 1920   # vertical, for Shorts/Reels/TikTok
-  zoom_amount: 0.12    # Ken Burns zoom over each segment
+  frame_height: 1920
+  zoom_amount: 0.12
 
 drive:
-  folder_id: ""   # set via GDRIVE_FOLDER_ID env var instead if you prefer not to commit it
+  folder_id: ""
