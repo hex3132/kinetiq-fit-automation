@@ -1,11 +1,25 @@
 """
 generate_flow_prompts.py — builds a Google Flow prompt as structured
-JSON (matching a Flow-style scene-sequence schema), so the same coach
-character fully performs one complete exercise across the video, with
-the full continuous narration included as a single voice-over field.
+JSON, one scene per script segment (10 scenes), each with an explicit
+"emotion" field, so the same coach character fully performs one
+complete exercise across the video with clear emotional direction
+per scene.
 """
 
 import json
+
+SCENE_TITLES = [
+    "Hook",
+    "Exercise Introduction",
+    "Starting Position",
+    "The Movement",
+    "Breathing & Tempo",
+    "Common Mistake",
+    "Correct Form Fix",
+    "Why It Works",
+    "Motivation",
+    "Outro / Call to Action",
+]
 
 
 def build_flow_prompt_json(script: dict, config: dict, character: dict) -> dict:
@@ -17,18 +31,9 @@ def build_flow_prompt_json(script: dict, config: dict, character: dict) -> dict:
 
     full_narration = " ".join(seg["vo"].strip() for seg in script["segments"])
 
-    scene_titles = [
-        "Intro / Hook",
-        "Exercise Demo — Step by Step",
-        "Common Mistake",
-        "Correct Form Fix",
-        "Benefit / Why It Works",
-        "Outro / Call to Action",
-    ]
-
     scene_sequence = []
     for i, seg in enumerate(script["segments"]):
-        title = scene_titles[i] if i < len(scene_titles) else f"Scene {i + 1}"
+        title = SCENE_TITLES[i] if i < len(SCENE_TITLES) else f"Scene {i + 1}"
         scene_sequence.append({
             "scene": i + 1,
             "title": title,
@@ -38,7 +43,8 @@ def build_flow_prompt_json(script: dict, config: dict, character: dict) -> dict:
             "action": f"{char_name} is fully visible, {seg['visual']}, completing full clean repetitions of the movement without being cut off mid-motion",
             "setting": set_desc,
             "camera": "steady vertical framing, smooth continuous motion, no jarring cuts",
-            "mood": seg["emotion"],
+            "emotion": seg["emotion"],
+            "emotion_direction": _emotion_direction(seg["emotion"]),
         })
 
     return {
@@ -75,8 +81,23 @@ def build_flow_prompt_json(script: dict, config: dict, character: dict) -> dict:
             "one continuous exercise demonstration",
             "consistent character across scenes",
             "vertical short-form video",
+            "clear emotional pacing scene to scene",
         ],
     }
+
+
+def _emotion_direction(emotion: str) -> str:
+    directions = {
+        "energetic": "upbeat, high energy, quick pacing",
+        "instructional": "clear, measured, precise delivery",
+        "warning": "slightly urgent, cautionary tone",
+        "warm": "gentle, friendly, reassuring",
+        "confident": "steady, assured, grounded",
+        "inviting": "welcoming, open, friendly",
+        "encouraging": "supportive, uplifting, motivating",
+        "calm": "relaxed, slow, steady breathing tone",
+    }
+    return directions.get(emotion, "neutral, clear delivery")
 
 
 def write_flow_prompt_file(script: dict, config: dict, character: dict, out_path: str = "output/flow_prompt.json") -> str:
