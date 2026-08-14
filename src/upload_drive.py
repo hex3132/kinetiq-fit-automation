@@ -39,7 +39,14 @@ def upload_file(service, local_path, filename, folder_id, mime_type="application
     return uploaded.get("id")
 
 
-def upload_daily_outputs(video_path: str, metadata_path: str, folder_id: str, date_str: str, flow_prompt_path: str = None):
+def upload_daily_outputs(
+    video_path: str,
+    metadata_path: str,
+    folder_id: str,
+    date_str: str,
+    flow_prompt_path: str = None,
+    voiceover_script_path: str = None,
+):
     service = _get_drive_service()
     resolved_folder_id = _resolve_folder_id(service, FOLDER_NAME)
 
@@ -48,6 +55,9 @@ def upload_daily_outputs(video_path: str, metadata_path: str, folder_id: str, da
 
     if flow_prompt_path and os.path.exists(flow_prompt_path):
         upload_file(service, flow_prompt_path, f"{date_str}-flow-prompt.json", resolved_folder_id, "application/json")
+
+    if voiceover_script_path and os.path.exists(voiceover_script_path):
+        upload_file(service, voiceover_script_path, f"{date_str}-voiceover-script.txt", resolved_folder_id, "text/plain")
 
 
 if __name__ == "__main__":
